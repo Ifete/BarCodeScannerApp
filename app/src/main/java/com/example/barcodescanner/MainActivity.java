@@ -1,14 +1,8 @@
 package com.example.barcodescanner;
 
-import android.app.Activity;
-import android.content.ContentValues;
-import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Point;
-import android.graphics.Rect;
 import android.net.Uri;
 import android.os.Bundle;
-import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
@@ -16,31 +10,24 @@ import android.widget.TextView;
 import android.Manifest;
 import android.widget.Toast;
 
-import androidx.activity.result.ActivityResult;
-import androidx.activity.result.ActivityResultCallback;
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.gms.tasks.Task;
 import com.google.android.material.button.MaterialButton;
-import com.google.mlkit.vision.barcode.BarcodeScanner;
-import com.google.mlkit.vision.barcode.BarcodeScannerOptions;
-import com.google.mlkit.vision.barcode.BarcodeScanning;
-import com.google.mlkit.vision.barcode.common.Barcode;
-import com.google.mlkit.vision.common.InputImage;
 
-import java.util.List;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 public class MainActivity extends AppCompatActivity {
-    private MaterialButton cameraBtn, galleryBtn, scanBtn;
+    private MaterialButton cameraBtn, galleryBtn, scanBtn, JSONBtn;
     private ImageView imageIv;
-    private TextView resultTv;
+    private TextView resultTv, productIdTv, productNameTv, productImageUrlTv;
 
     private static final int CAMERA_REQUEST_CODE = 100;
     private static final int STORAGE_REQUEST_CODE = 101;
@@ -50,13 +37,14 @@ public class MainActivity extends AppCompatActivity {
     private String[] storagePermissions;
 
     //Uri of picked image
-    private Uri imageUri = null;
+    public Uri imageUri = null;
 
-    private static final String TAG = "MAIN_TAG";
+    GIFGallery GIFGallery;
+    GIFCamera GIFCamera;
+    ScanBCInfo ScanBCInfo;
+    private ExecutorService executorService;
 
-    private BarcodeScannerOptions barcodeScannerOptions;
-    private BarcodeScanner barcodeScanner;
-
+    String url = "https://world.openfoodfacts.org/api/v0/product/";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,9 +55,13 @@ public class MainActivity extends AppCompatActivity {
         cameraBtn = findViewById(R.id.cameraBtn);
         galleryBtn = findViewById(R.id.galleryBtn);
         scanBtn = findViewById(R.id.scanBtn);
+        JSONBtn = findViewById(R.id.jsonBtn);
 
         //ImageViews
         imageIv = findViewById(R.id.imageIv);
+        productIdTv = findViewById(R.id.productIdTv);
+        productNameTv = findViewById(R.id.productNameTv);
+        productImageUrlTv = findViewById(R.id.productImageTv);
 
         //TextViews
         resultTv = findViewById(R.id.resultTv);
@@ -78,13 +70,15 @@ public class MainActivity extends AppCompatActivity {
         cameraPermissions = new String[]{Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE};//image from camera: Camera and Storage
         storagePermissions = new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE};//Image from gallery: Storage
 
-        //init barcode scanner
-        barcodeScannerOptions = new BarcodeScannerOptions.Builder()
-                .setBarcodeFormats(
-                        Barcode.FORMAT_ALL_FORMATS)
-                .build();
-        barcodeScanner = BarcodeScanning.getClient(barcodeScannerOptions);
 
+        //init image picker from gallery
+        GIFGallery = new GIFGallery(MainActivity.this, imageIv);
+
+        //init image picker from camera
+        GIFCamera = new GIFCamera(MainActivity.this, imageIv, resultTv, productIdTv, productNameTv, productImageUrlTv);
+
+        // Initialize the ExecutorService
+        executorService = Executors.newSingleThreadExecutor();
 
         //Handle camenraBtn click, check permissions related to Camera(i.e WRITE_EXTERNAL_STORAGE, CAMERA) and take picture
         cameraBtn.setOnClickListener(new View.OnClickListener() {
@@ -93,7 +87,7 @@ public class MainActivity extends AppCompatActivity {
                 //check permissions
                 if(checkCameraPermission()){
                     //permissions allowed, open camera
-                    pickImageCamera();
+                    GIFCamera.pickImageCamera();
                 }else {
                     //permissions not allowed, request
                     requestCameraPermission();
@@ -108,11 +102,13 @@ public class MainActivity extends AppCompatActivity {
                 //check permissions
                 if(checkStoragePermission()){
                     //permissions allowed, open gallery
-                    pickFromGallery();
+                    GIFGallery.pickFromGallery();
                 }else {
                     //permissions not allowed, request
                     requestStoragePermission();
                 }
+                scanItem();
+                getJSONIfo();
             }
         });
 
@@ -120,207 +116,101 @@ public class MainActivity extends AppCompatActivity {
         scanBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                imageUri = GIFGallery.getImageUri();
+                if (imageUri == null) {
+                    imageUri = GIFCamera.getImageUri();
+                }
                 if(imageUri == null){
                     Toast.makeText(MainActivity.this, "Please pick an image", Toast.LENGTH_SHORT).show();
                 }else {
-                    detectResultFromImage();
+                    //init barcode scanner
+                    ScanBCInfo = new ScanBCInfo(MainActivity.this, imageIv, resultTv, imageUri, productIdTv, productNameTv, productImageUrlTv);
+                    ScanBCInfo.detectResultFromImage();
+//                    String barcode = ScanBCInfo.getBarcodeData();
+//                    getProductInfo(url, barcode);
                 }
+            }
+        });
+
+
+        JSONBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String barcode = ScanBCInfo.getBarcodeData();
+                url = url + barcode + ".json";
+                getProductInfo(url, barcode);
             }
         });
     }
 
-    private void detectResultFromImage() {
-        try {
-            //prepare image from image uri
-            InputImage inputImage = InputImage.fromFilePath(this, imageUri);
-            //start scanning the image for barcode
-            Task<List<Barcode>> barcodeResult = barcodeScanner.process(inputImage).
-                    addOnSuccessListener(new OnSuccessListener<List<Barcode>>() {
-                        @Override
-                        public void onSuccess(List<Barcode> barcodes) {
-                            //task completed successfully,we can get details of barcode
-                            extractBarcodeData(barcodes);
-                        }
-                    })
-                    .addOnFailureListener(new OnFailureListener() {
-                        @Override
-                        public void onFailure(@NonNull Exception e) {
-                            //Failed scanning image for barcode
-                            Toast.makeText(MainActivity.this, "Failed scanning due to: "+e.getMessage(), Toast.LENGTH_LONG).show();
-                        }
-                    });
+    //Function to scan info from image
+    private void scanItem(){
 
-        }catch (Exception e){
-            Toast.makeText(this, "Failed scanning due to: "+e.getMessage(), Toast.LENGTH_LONG).show();
+        imageUri = GIFGallery.getImageUri();
+        if (imageUri == null) {
+            imageUri = GIFCamera.getImageUri();
+        }
+        if(imageUri == null){
+            Toast.makeText(MainActivity.this, "Please pick an image", Toast.LENGTH_SHORT).show();
+        }else {
+            //init barcode scanner
+            ScanBCInfo = new ScanBCInfo(MainActivity.this, imageIv, resultTv, imageUri, productIdTv, productNameTv, productImageUrlTv);
+            ScanBCInfo.detectResultFromImage();
         }
     }
 
-    private void extractBarcodeData(List<Barcode> barcodes) {
-        for (Barcode barcode: barcodes){
-            Rect bounds = barcode.getBoundingBox();
-            Point[] corners = barcode.getCornerPoints();
-
-            //Get data from barcode
-            String rawValue = barcode.getRawValue();
-            /*The following types are suported:
-            * Barcode.TYPE_UNKNOWN, Barcode.TYPE_CONTACT_INFO,Barcode.TYPE_EMAIL, Barcode.TYPE_ISBN, Barcode.TYPE_PHONE,
-            * Barcode.TYPE_PRODUCT, Barcode.TYPE_SMS, Barcode.TYPE_TEXT, Barcode.TYPE_URL, Barcode.TYPE_WIFI, Barcode.TYPE_GEO
-            * Barcode.TYPE_CALENDAR_EVENT, Barcode.TYPE_DRIVER_LICENSE */
-            int valueType = barcode.getValueType();
-            //manage each type separately
-            switch (valueType){
-                case Barcode.TYPE_URL:{
-                    String title = barcode.getUrl().getTitle();
-                    String url = barcode.getUrl().getUrl();
-                    resultTv.setText("Type: "+valueType+"\nTitle: "+title+"\nURL: "+url);
-                }
-                break;
-                case Barcode.TYPE_EMAIL:{
-                    String email = barcode.getEmail().getAddress();
-                    String subject = barcode.getEmail().getSubject();
-                    String body = barcode.getEmail().getBody();
-                    resultTv.setText("Type: "+valueType+"\nEmail: "+email+"\nSubject: "+subject+"\nBody: "+body);
-                }
-                break;
-                case Barcode.TYPE_PHONE:{
-                    String phone = barcode.getPhone().getNumber();
-                    resultTv.setText("Type: "+valueType+"\nPhone: "+phone);
-                }
-                break;
-                case Barcode.TYPE_SMS:{
-                    String phone = barcode.getSms().getPhoneNumber();
-                    String message = barcode.getSms().getMessage();
-                    resultTv.setText("Type: "+valueType+"\nPhone: "+phone+"\nMessage: "+message);
-                }
-                break;
-                case Barcode.TYPE_WIFI:{
-                    String ssid = barcode.getWifi().getSsid();
-                    String password = barcode.getWifi().getPassword();
-                    int type = barcode.getWifi().getEncryptionType();
-                    resultTv.setText("Type: "+valueType+"\nSSID: "+ssid+"\nPassword: "+password+"\nType: "+type);
-                }
-                break;
-                case Barcode.TYPE_GEO:{
-                    double lat = barcode.getGeoPoint().getLat();
-                    double lng = barcode.getGeoPoint().getLng();
-                    resultTv.setText("Type: "+valueType+"\nLatitude: "+lat+"\nLongitude: "+lng);
-                }
-                break;
-                case Barcode.TYPE_CALENDAR_EVENT:{
-                    String description = barcode.getCalendarEvent().getDescription();
-                    String location = barcode.getCalendarEvent().getLocation();
-                    String organizer = barcode.getCalendarEvent().getOrganizer();
-                    String status = barcode.getCalendarEvent().getStatus();
-                    String summary = barcode.getCalendarEvent().getSummary();
-                    long start = barcode.getCalendarEvent().getStart().getSeconds();
-                    long end = barcode.getCalendarEvent().getEnd().getSeconds();
-                    resultTv.setText("Type: "+valueType+"\nDescription: "+description+"\nLocation: "+location+"\nOrganizer: "+organizer+
-                            "\nStatus: "+status+"\nSummary: "+summary+"\nStart"+start+"\nEnd"+end);
-                }
-                break;
-                case Barcode.TYPE_DRIVER_LICENSE: {
-                    String firstName = barcode.getDriverLicense().getFirstName();
-                    String middleName = barcode.getDriverLicense().getMiddleName();
-                    String lastName = barcode.getDriverLicense().getLastName();
-                }
-                break;
-                case Barcode.TYPE_TEXT:{
-                    String text = barcode.getDisplayValue();
-                    resultTv.setText("Type: "+valueType+"\nText: "+text);
-                }
-                break;
-                case Barcode.TYPE_UNKNOWN: {
-                    resultTv.setText("Type: " + valueType + "\nUnknown type");
-                }
-                break;
-                case Barcode.TYPE_CONTACT_INFO: {
-                    String name = barcode.getContactInfo().getName().getFormattedName();
-                    String organization = barcode.getContactInfo().getOrganization();
-                    String title = barcode.getContactInfo().getTitle();
-                    resultTv.setText("Type: " + valueType + "\nName: " + name + "\nOrganization: " + organization + "\nTitle: " + title);
-                }
-                break;
-                case Barcode.TYPE_ISBN: {
-                    String isbn = barcode.getDisplayValue();
-                    resultTv.setText("Type: " + valueType + "\nISBN: " + isbn);
-                }
-                break;
-                case Barcode.TYPE_PRODUCT: {
-                    String product = barcode.getDisplayValue();
-                    resultTv.setText("Type: " + valueType + "\nProduct: " + product);
-                }
-                break;
-                default:{
-                    resultTv.setText("rawValue: "+rawValue+"\nvalueType: "+valueType);
-                }
-            }
-        }
-
-
-
+    private void getJSONIfo(){
+        String barcode = ScanBCInfo.getBarcodeData();
+        url = url + barcode + ".json";
+        getProductInfo(url, barcode);
     }
 
-    private void pickFromGallery() {
-        //Intent to pick image from gallery
-        Intent galleryIntent = new Intent(Intent.ACTION_PICK);
-        galleryIntent.setType("image/*");
-        galleryLauncher.launch(galleryIntent);
+
+    /*GET JSON DATA*/
+    private void getProductInfo(String url, String barcode) {
+        GetProductInfoTask task = new GetProductInfoTask(url, barcode);
+        Future<String> future = executorService.submit(task);
+
+        executorService.execute(() -> {
+            try {
+                String response = future.get();
+                try {
+                    JSONObject jsonObject = new JSONObject(response);
+                    JSONObject product = jsonObject.getJSONObject("product");
+                    String productId = product.getString("id");
+                    String genericNameEs = product.getString("generic_name_es");
+                    String imageUrl = product.getString("image_front_small_url");
+                    // Set data to TextView
+                    Log.d("product", "Product ID: " + productId + "\n" +
+                            "Generic Name: " + genericNameEs + "\n" +
+                            "Image URL: " + imageUrl);
+                    productIdTv.setText(String.format("Product ID: %s", productId));
+                    productNameTv.setText(String.format("Generic Name: %s", genericNameEs));
+                    productImageUrlTv.setText(String.format("Image URL: %s", imageUrl));
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                    productIdTv.setText("Failed to get product info");
+                }
+//                runOnUiThread(() -> {
+//                    // Parse JSON response
+//
+//                });
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
     }
 
-    private final ActivityResultLauncher<Intent> galleryLauncher = registerForActivityResult(
-            new ActivityResultContracts.StartActivityForResult(),
-            new ActivityResultCallback<ActivityResult>() {
-                @Override
-                public void onActivityResult(ActivityResult result) {
-                    //Image picked from gallery
-                    if (result.getResultCode() == Activity.RESULT_OK) {
-                        //get the uri of image picked from gallery
-                        Intent data = result.getData();
-                        imageUri = data.getData();
-                        Log.d(TAG, "onActivityResult: imageUri: " + imageUri);
-                        //set to ImageView
-                        imageIv.setImageURI(imageUri);
-                    }else {
-                        //Failed picking image from gallery
-                        Toast.makeText(MainActivity.this, "Failed to pick image from gallery", Toast.LENGTH_SHORT).show();
-                    }
-                }
-            }
-    );
-
-    private void pickImageCamera(){
-        ContentValues contentValues = new ContentValues();
-        contentValues.put(MediaStore.Images.Media.TITLE, "Sample Title");
-        contentValues.put(MediaStore.Images.Media.DESCRIPTION, "Sample Image Description");
-
-        imageUri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues);
-
-        Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, imageUri);
-        cameraActivityResultLauncher.launch(cameraIntent);
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        // Shutdown the ExecutorService
+        executorService.shutdown();
     }
 
-    private final ActivityResultLauncher<Intent> cameraActivityResultLauncher = registerForActivityResult(
-            new ActivityResultContracts.StartActivityForResult(),
-            new ActivityResultCallback<ActivityResult>() {
-                @Override
-                public void onActivityResult(ActivityResult result) {
-                    //Image picked from camera
-                    if (result.getResultCode() == Activity.RESULT_OK) {
-                        //get the uri of image taken from camera
-                        Intent data = result.getData();
-                        //we already have the image in imageUri using function pickImageCamera()
-                        Log.d(TAG, "onActivityResult: imageUri: " + imageUri);
-                        //set to ImageView
-                        imageIv.setImageURI(imageUri);
-                    }else {
-                        //Failed taking picture from camera
-                        Toast.makeText(MainActivity.this, "Failed taking picture from camera", Toast.LENGTH_SHORT).show();
-                    }
-                }
-            }
-    );
 
+
+    /* PERMISSIONS SECTION */
     private boolean checkStoragePermission() {
         //check if storage permission is enabled or not
         boolean result = ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
@@ -364,7 +254,7 @@ public class MainActivity extends AppCompatActivity {
                     //if both permissions are granted
                     if(cameraAccepted && storageAccepted) {
                         //permissions enabled
-                        pickImageCamera();
+                        GIFCamera.pickImageCamera();
                     }else {
                         //permissions denied cant launch camera
                         Toast.makeText(this, "Camera & Storage permissions are required...", Toast.LENGTH_SHORT).show();
@@ -378,7 +268,7 @@ public class MainActivity extends AppCompatActivity {
                     //permission granted
                     if(storageAccepted) {
                         //permission enabled
-                        pickFromGallery();
+                        GIFGallery.pickFromGallery();
                     }
                 }else {
                     //permission denied cant pick image from gallery
