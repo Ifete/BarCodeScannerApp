@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">La Despensa</string>
+    <string name="username">Usuario</string>
+    <string name="loginBtn">Entrar</string>
+    <string name="pasword">Contraseña</string>
+    <string name="storage">Almacén</string>
+    <string name="items">Artículos</string>
+    <string name="settings">Configuración</string>
+    <string name="edit">Editar</string>
+    <string name="add">Añadir</string>
+    <string name="newItems">Añadir nuevo elemento</string>
+</resources>

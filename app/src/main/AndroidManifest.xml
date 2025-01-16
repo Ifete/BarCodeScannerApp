@@ -30,9 +30,20 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".MainActivity"
+            android:name=".AddItemPage"
             android:exported="true">
-
+        </activity>
+        <activity
+            android:name=".storage.StoragePage"
+            android:exported="true">
+        </activity>
+        <activity
+            android:name=".items.ItemsPage"
+            android:exported="true">
+        </activity>
+        <activity
+            android:name=".settings.SettingsPage"
+            android:exported="true">
         </activity>
     </application>
 

@@ -1,9 +1,10 @@
 package com.example.barcodescanner;
 
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
-import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -15,17 +16,22 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import com.example.barcodescanner.items.ItemsPage;
+import com.example.barcodescanner.settings.SettingsPage;
+import com.example.barcodescanner.storage.StoragePage;
 import com.google.android.material.button.MaterialButton;
-
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
-public class MainActivity extends AppCompatActivity {
-    private MaterialButton cameraBtn, galleryBtn, scanBtn, JSONBtn;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.navigation.NavigationBarView;
+
+
+public class AddItemPage extends AppCompatActivity {
+    private MaterialButton galleryBtn;
+    private FloatingActionButton cameraBtn;
     private ImageView imageIv;
     private TextView resultTv, productIdTv, productNameTv, productImageUrlTv;
 
@@ -49,13 +55,12 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.add_item_page);
 
         //Buttons
-        cameraBtn = findViewById(R.id.cameraBtn);
-        galleryBtn = findViewById(R.id.galleryBtn);
-        scanBtn = findViewById(R.id.scanBtn);
-        JSONBtn = findViewById(R.id.jsonBtn);
+        cameraBtn = findViewById(R.id.cameraFab);
+        cameraBtn.show();
+        //galleryBtn = findViewById(R.id.galleryBtn);
 
         //ImageViews
         imageIv = findViewById(R.id.imageIv);
@@ -72,10 +77,10 @@ public class MainActivity extends AppCompatActivity {
 
 
         //init image picker from gallery
-        GIFGallery = new GIFGallery(MainActivity.this, imageIv);
+        GIFGallery = new GIFGallery(AddItemPage.this, imageIv);
 
         //init image picker from camera
-        GIFCamera = new GIFCamera(MainActivity.this, imageIv, resultTv, productIdTv, productNameTv, productImageUrlTv);
+        GIFCamera = new GIFCamera(AddItemPage.this, imageIv, resultTv, productIdTv, productNameTv, productImageUrlTv);
 
         // Initialize the ExecutorService
         executorService = Executors.newSingleThreadExecutor();
@@ -96,110 +101,48 @@ public class MainActivity extends AppCompatActivity {
         });
 
         //Handle galleryBtn click, check permissions related to Gallery(i.e READ_EXTERNAL_STORAGE) and open gallery
-        galleryBtn.setOnClickListener(new View.OnClickListener() {
+//        galleryBtn.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                //check permissions
+//                if(checkStoragePermission()){
+//                    //permissions allowed, open gallery
+//                    GIFGallery.pickFromGallery();
+//                }else {
+//                    //permissions not allowed, request
+//                    requestStoragePermission();
+//                }
+//            }
+//        });
+
+
+
+        BottomNavigationView bottomNavigationView = findViewById(R.id.bottom_navigation);
+        bottomNavigationView.setSelectedItemId(R.id.itemsMenu);
+        bottomNavigationView.setOnItemSelectedListener(new NavigationBarView.OnItemSelectedListener() {
             @Override
-            public void onClick(View v) {
-                //check permissions
-                if(checkStoragePermission()){
-                    //permissions allowed, open gallery
-                    GIFGallery.pickFromGallery();
-                }else {
-                    //permissions not allowed, request
-                    requestStoragePermission();
+            public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+                switch (item.getItemId()) {
+                    case R.id.storageMenu:
+                        Intent storagePage = new Intent(AddItemPage.this, StoragePage.class);
+                        AddItemPage.this.startActivity(storagePage);
+                        return true;
+                    case R.id.itemsMenu:
+                        Intent itemsPage = new Intent(AddItemPage.this, ItemsPage.class);
+                        AddItemPage.this.startActivity(itemsPage);
+                        return true;
+                    case R.id.settingsMenu:
+                        Intent settingsPage = new Intent(AddItemPage.this, SettingsPage.class);
+                        AddItemPage.this.startActivity(settingsPage);
+                        return true;
                 }
-                scanItem();
-                getJSONIfo();
+                return false;
             }
         });
 
-        //Handle scanBtn click scan barcode from image
-        scanBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                imageUri = GIFGallery.getImageUri();
-                if (imageUri == null) {
-                    imageUri = GIFCamera.getImageUri();
-                }
-                if(imageUri == null){
-                    Toast.makeText(MainActivity.this, "Please pick an image", Toast.LENGTH_SHORT).show();
-                }else {
-                    //init barcode scanner
-                    ScanBCInfo = new ScanBCInfo(MainActivity.this, imageIv, resultTv, imageUri, productIdTv, productNameTv, productImageUrlTv);
-                    ScanBCInfo.detectResultFromImage();
-//                    String barcode = ScanBCInfo.getBarcodeData();
-//                    getProductInfo(url, barcode);
-                }
-            }
-        });
-
-
-        JSONBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String barcode = ScanBCInfo.getBarcodeData();
-                url = url + barcode + ".json";
-                getProductInfo(url, barcode);
-            }
-        });
-    }
-
-    //Function to scan info from image
-    private void scanItem(){
-
-        imageUri = GIFGallery.getImageUri();
-        if (imageUri == null) {
-            imageUri = GIFCamera.getImageUri();
-        }
-        if(imageUri == null){
-            Toast.makeText(MainActivity.this, "Please pick an image", Toast.LENGTH_SHORT).show();
-        }else {
-            //init barcode scanner
-            ScanBCInfo = new ScanBCInfo(MainActivity.this, imageIv, resultTv, imageUri, productIdTv, productNameTv, productImageUrlTv);
-            ScanBCInfo.detectResultFromImage();
-        }
-    }
-
-    private void getJSONIfo(){
-        String barcode = ScanBCInfo.getBarcodeData();
-        url = url + barcode + ".json";
-        getProductInfo(url, barcode);
     }
 
 
-    /*GET JSON DATA*/
-    private void getProductInfo(String url, String barcode) {
-        GetProductInfoTask task = new GetProductInfoTask(url, barcode);
-        Future<String> future = executorService.submit(task);
-
-        executorService.execute(() -> {
-            try {
-                String response = future.get();
-                try {
-                    JSONObject jsonObject = new JSONObject(response);
-                    JSONObject product = jsonObject.getJSONObject("product");
-                    String productId = product.getString("id");
-                    String genericNameEs = product.getString("generic_name_es");
-                    String imageUrl = product.getString("image_front_small_url");
-                    // Set data to TextView
-                    Log.d("product", "Product ID: " + productId + "\n" +
-                            "Generic Name: " + genericNameEs + "\n" +
-                            "Image URL: " + imageUrl);
-                    productIdTv.setText(String.format("Product ID: %s", productId));
-                    productNameTv.setText(String.format("Generic Name: %s", genericNameEs));
-                    productImageUrlTv.setText(String.format("Image URL: %s", imageUrl));
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                    productIdTv.setText("Failed to get product info");
-                }
-//                runOnUiThread(() -> {
-//                    // Parse JSON response
-//
-//                });
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
-    }
 
     @Override
     protected void onDestroy() {
@@ -278,4 +221,7 @@ public class MainActivity extends AppCompatActivity {
             break;
         }
     }
+
+
+
 }

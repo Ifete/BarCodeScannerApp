@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/storageMenu"
+        android:title="@string/storage"
+        android:icon="@drawable/ic_fridge_foreground" />
+    <item android:id="@+id/itemsMenu"
+        android:title="@string/items"
+        android:icon="@drawable/ic_food_foreground"/>
+    <item android:id="@+id/settingsMenu"
+        android:title="@string/settings"
+        android:icon="@drawable/ic_person_foreground"/>
+</menu>
