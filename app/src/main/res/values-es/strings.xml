@@ -10,4 +10,7 @@
     <string name="edit">Editar</string>
     <string name="add">Añadir</string>
     <string name="newItems">Añadir nuevo elemento</string>
+    <string name="productId">ID Producto</string>
+    <string name="productName">Nombre Producto</string>
+    <string name="productImage">Imagen Producto</string>
 </resources>

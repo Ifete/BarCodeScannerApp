@@ -27,13 +27,15 @@ import java.util.concurrent.Executors;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.navigation.NavigationBarView;
+import com.google.android.material.textfield.TextInputEditText;
 
 
 public class AddItemPage extends AppCompatActivity {
-    private MaterialButton galleryBtn;
+    private MaterialButton addItemBtn;
     private FloatingActionButton cameraBtn;
     private ImageView imageIv;
-    private TextView resultTv, productIdTv, productNameTv, productImageUrlTv;
+    private TextView resultTv;
+    private TextInputEditText productIdTv, productNameTv, productImageUrlTv;
 
     private static final int CAMERA_REQUEST_CODE = 100;
     private static final int STORAGE_REQUEST_CODE = 101;
@@ -42,8 +44,6 @@ public class AddItemPage extends AppCompatActivity {
     private String[] cameraPermissions;
     private String[] storagePermissions;
 
-    //Uri of picked image
-    public Uri imageUri = null;
 
     GIFGallery GIFGallery;
     GIFCamera GIFCamera;
@@ -57,13 +57,17 @@ public class AddItemPage extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.add_item_page);
 
+
         //Buttons
+        addItemBtn = findViewById(R.id.addItemBtn);
         cameraBtn = findViewById(R.id.cameraFab);
         cameraBtn.show();
-        //galleryBtn = findViewById(R.id.galleryBtn);
+
 
         //ImageViews
         imageIv = findViewById(R.id.imageIv);
+
+        //TextInputEditTexts
         productIdTv = findViewById(R.id.productIdTv);
         productNameTv = findViewById(R.id.productNameTv);
         productImageUrlTv = findViewById(R.id.productImageTv);
@@ -99,21 +103,6 @@ public class AddItemPage extends AppCompatActivity {
                 }
             }
         });
-
-        //Handle galleryBtn click, check permissions related to Gallery(i.e READ_EXTERNAL_STORAGE) and open gallery
-//        galleryBtn.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                //check permissions
-//                if(checkStoragePermission()){
-//                    //permissions allowed, open gallery
-//                    GIFGallery.pickFromGallery();
-//                }else {
-//                    //permissions not allowed, request
-//                    requestStoragePermission();
-//                }
-//            }
-//        });
 
 
 

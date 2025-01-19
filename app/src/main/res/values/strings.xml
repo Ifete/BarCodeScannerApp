@@ -11,5 +11,8 @@
     <string name="minus" translatable="false">-</string>
     <string name="plus" translatable="false">+</string>
     <string name="newItems">Add new Items</string>
+    <string name="productId">Product ID</string>
+    <string name="productName">Product Name</string>
+    <string name="productImage">Product Image</string>
 
 </resources>

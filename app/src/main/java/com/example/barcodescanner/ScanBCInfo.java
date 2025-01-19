@@ -1,5 +1,6 @@
 package com.example.barcodescanner;
 
+import android.app.Activity;
 import android.content.Context;
 import android.graphics.Point;
 import android.graphics.Rect;
@@ -14,6 +15,7 @@ import androidx.annotation.NonNull;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
+import com.google.android.material.textfield.TextInputEditText;
 import com.google.mlkit.vision.barcode.BarcodeScanner;
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions;
 import com.google.mlkit.vision.barcode.BarcodeScanning;
@@ -33,7 +35,8 @@ public class ScanBCInfo {
     private Context context;
     private ImageView imageIv;
     private Uri imageUri;
-    private TextView resultTv, productIdTv, productNameTv, productImageUrlTv;;
+    private TextView resultTv;
+    private TextInputEditText productIdTv, productNameTv, productImageUrlTv;
     private static final String TAG = "MAIN_TAG";
 
     private BarcodeScannerOptions barcodeScannerOptions;
@@ -46,7 +49,7 @@ public class ScanBCInfo {
 
 
     //constructor
-    public ScanBCInfo(Context context, ImageView imageIv, TextView resultTv, Uri imageUri,TextView productIdTv, TextView productNameTv, TextView productImageUrlTv) {
+    public ScanBCInfo(Context context, ImageView imageIv, TextView resultTv, Uri imageUri,TextInputEditText productIdTv, TextInputEditText productNameTv, TextInputEditText productImageUrlTv) {
         this.context = context;
         this.imageIv = imageIv;
         this.resultTv = resultTv;
@@ -216,19 +219,22 @@ public class ScanBCInfo {
                 try {
                     JSONObject jsonObject = new JSONObject(response);
                     JSONObject product = jsonObject.getJSONObject("product");
-                    String productId = product.getString("id");
-                    String genericNameEs = product.getString("generic_name_es");
-                    String imageUrl = product.getString("image_front_small_url");
+                    String productId = product.optString("id", "N/A");
+                    String genericNameEs = product.optString("generic_name_es", "N/A");
+                    String imageUrl = product.optString("image_front_small_url", "N/A");
                     // Set data to TextView
                     Log.d("product", "Product ID: " + productId + "\n" +
                             "Generic Name: " + genericNameEs + "\n" +
                             "Image URL: " + imageUrl);
-                    productIdTv.setText(String.format("Product ID: %s", productId));
-                    productNameTv.setText(String.format("Generic Name: %s", genericNameEs));
-                    productImageUrlTv.setText(String.format("Image URL: %s", imageUrl));
+                    // Update UI on the main thread
+                    ((Activity) context).runOnUiThread(() -> {
+                        productIdTv.setText(String.format("%s", productId));
+                        productNameTv.setText(String.format("%s", genericNameEs));
+                        productImageUrlTv.setText(String.format("%s", imageUrl));
+                    });
                 } catch (JSONException e) {
                     e.printStackTrace();
-                    productIdTv.setText("Failed to get product info");
+                    productIdTv.setText("Failed to parse product info");
                 }
 //                runOnUiThread(() -> {
 //                    // Parse JSON response
@@ -236,6 +242,7 @@ public class ScanBCInfo {
 //                });
             } catch (Exception e) {
                 e.printStackTrace();
+                productIdTv.setText("Failed to get product info");
             }
         });
     }

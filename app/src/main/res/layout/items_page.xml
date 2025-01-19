@@ -4,14 +4,19 @@
     android:layout_height="match_parent"
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
-    <RelativeLayout
+
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        tools:context=".storage.StoragePage">
+        android:layout_height="match_parent">
 
         <LinearLayout
+            app:layout_constraintBottom_toTopOf="@id/bottom_navigation"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            android:id="@+id/itemListLayout"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="0dp"
             android:orientation="vertical">
 
             <TextView
@@ -26,35 +31,33 @@
             <ListView
                 android:id="@+id/itemsList"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"/>
+                android:layout_height="0dp"
+                android:layout_weight="1"/>
         </LinearLayout>
 
-    </RelativeLayout>
-    <com.google.android.material.bottomappbar.BottomAppBar
-        android:id="@+id/bottom_app_bar"
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/itemListLayout"
+        android:id="@+id/bottom_navigation"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="bottom"
-        android:layout_gravity="bottom"
-        app:fabCradleRoundedCornerRadius="10dp"
-        app:fabCradleVerticalOffset="10dp"
-        app:fabCradleMargin="10dp">
+        android:layout_alignParentBottom="true"
+        app:menu="@menu/bottom_nav_menu" />
 
-        <com.google.android.material.bottomnavigation.BottomNavigationView
-            android:id="@+id/bottom_navigation"
-            android:layout_width="match_parent"
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            app:layout_constraintBottom_toBottomOf="@id/bottom_navigation"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:id="@+id/btnAddItemFloating"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignParentBottom="true"
-            app:menu="@menu/bottom_nav_menu"
-            android:layout_marginRight="16dp"
-            />
-    </com.google.android.material.bottomappbar.BottomAppBar>
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/plusFab"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:contentDescription="@string/plus"
-        app:srcCompat="@drawable/ic_plus_foreground"
-        app:layout_anchor="@id/bottom_app_bar"
-        android:layout_marginBottom="80dp"/>
+            android:contentDescription="@string/plus"
+            app:srcCompat="@drawable/ic_plus_foreground"
+            app:layout_anchor="@id/bottom_navigation"
+            android:layout_marginBottom="80dp"/>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+
+
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

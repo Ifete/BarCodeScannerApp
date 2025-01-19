@@ -17,6 +17,8 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.android.material.textfield.TextInputEditText;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -29,14 +31,15 @@ public class GIFCamera {
     private Context context;
     private ImageView imageIv;
     private Uri imageUri;
-    private TextView resultTv, productIdTv, productNameTv, productImageUrlTv;
+    private TextView resultTv;
+    private TextInputEditText productIdTv, productNameTv, productImageUrlTv;
     private static final String TAG = "MAIN_TAG";
 
     private final ActivityResultLauncher<Intent> cameraLauncher;
     ScanBCInfo ScanBCInfo;
 
 
-    public GIFCamera(Context context, ImageView imageIv, TextView resultTv, TextView productIdTv, TextView productNameTv, TextView productImageUrlTv) {
+    public GIFCamera(Context context, ImageView imageIv, TextView resultTv, TextInputEditText productIdTv, TextInputEditText productNameTv, TextInputEditText productImageUrlTv) {
         this.context = context;
         this.imageIv = imageIv;
         this.resultTv = resultTv;
