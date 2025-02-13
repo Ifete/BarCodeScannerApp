@@ -5,7 +5,6 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -20,15 +19,13 @@ import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
-import signin.SignUp;
+import com.example.barcodescanner.signin.SignUp;
 
 public class LogInMain extends AppCompatActivity {
     private static final String TAG = "LogInMain";
     private Button logInButton, signUpButton;
     private TextInputEditText usernameEt, passwordEt;
     private String email, password;
-    private static String USER = "ire";
-    private static String PASS = "1";
 
     // [START declare_auth]
     private FirebaseAuth mAuth;
@@ -44,8 +41,11 @@ public class LogInMain extends AppCompatActivity {
         logInButton = findViewById(R.id.logInBtn);
         signUpButton = findViewById(R.id.signUpBtn);
 
-        email = usernameEt.getText().toString();
-        password = passwordEt.getText().toString();
+        mAuth =FirebaseAuth.getInstance();
+
+
+
+
 
 
 
@@ -53,7 +53,16 @@ public class LogInMain extends AppCompatActivity {
         logInButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                signIn(email, password);
+                email = usernameEt.getText().toString().trim();
+                password = passwordEt.getText().toString().trim();
+
+                if (email.equals("")|password.equals("")){
+                    Log.d(TAG, "email: " + email + "\n password: " +password);
+                    Toast.makeText(LogInMain.this, "VACIO", Toast.LENGTH_SHORT).show();
+                }else {
+                    Log.d(TAG, "email: " + email + "\n password: " +password);
+                    signIn(email, password);
+                }
             }
         });
 
@@ -70,9 +79,11 @@ public class LogInMain extends AppCompatActivity {
     public void onStart() {
         super.onStart();
         // Check if user is signed in (non-null) and update UI accordingly.
-        FirebaseUser currentUser = mAuth.getCurrentUser();
-        if(currentUser != null){
-            currentUser.reload();
+        if (mAuth!=null){
+            FirebaseUser currentUser = mAuth.getCurrentUser();
+            if(currentUser != null){
+                currentUser.reload();
+            }
         }
     }
 

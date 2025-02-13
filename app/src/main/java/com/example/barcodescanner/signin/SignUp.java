@@ -1,8 +1,8 @@
-package signin;
+package com.example.barcodescanner.signin;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.service.autofill.SaveRequest;
+import android.text.Editable;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -17,6 +17,7 @@ import com.example.barcodescanner.login.LogInMain;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -32,12 +33,14 @@ public class SignUp extends AppCompatActivity {
         setContentView(R.layout.sign_up_page);
         Button signUp = findViewById(R.id.signUpBtn);
 
-        usernameEt = findViewById(R.id.usernameEt);
-        passwordEt = findViewById(R.id.passwordEt);
+        TextInputLayout usernameLy, passwordLy;
+        usernameLy = findViewById(R.id.usernameTl);
+        passwordLy = findViewById(R.id.passwordTl);
 
 
-        String email = usernameEt.getText().toString();
-        String password = passwordEt.getText().toString();
+
+
+
 
         // Initialize Firebase Auth
         mAuth = FirebaseAuth.getInstance();
@@ -45,7 +48,17 @@ public class SignUp extends AppCompatActivity {
         signUp.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                createAccount(email, password);
+                String email = usernameLy.getEditText().getText().toString().trim();
+                String password =  passwordLy.getEditText().getText().toString().trim();
+
+                if (email.equals("")|password.equals("")){
+                    Log.d(TAG, "email: " + email + "\n password: " +password);
+                    Toast.makeText(SignUp.this, "VACIO", Toast.LENGTH_SHORT).show();
+                }else {
+                    Log.d(TAG, "email: " + email + "\n password: " +password);
+                    createAccount(email, password);
+                }
+
             }
         });
     }
@@ -53,10 +66,12 @@ public class SignUp extends AppCompatActivity {
     @Override
     public void onStart() {
         super.onStart();
-        // Check if user is signed in (non-null) and update UI accordingly.
-        FirebaseUser currentUser = mAuth.getCurrentUser();
-        if(currentUser != null){
-            currentUser.reload();
+        if(mAuth!=null){
+            // Check if user is signed in (non-null) and update UI accordingly.
+            FirebaseUser currentUser = mAuth.getCurrentUser();
+            if(currentUser != null){
+                currentUser.reload();
+            }
         }
     }
 

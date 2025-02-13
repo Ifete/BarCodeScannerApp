@@ -4,9 +4,9 @@
 
     
     <!-- Permision to get images from camera -->
-    <uses-permission android:name="android.permission.CAMERA"></uses-permission>
+    <uses-permission android:name="android.permission.CAMERA" />
 
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"></uses-permission>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
 
     <!-- Specify that the app uses the camera hardware, but it is not required -->
     <uses-feature android:name="android.hardware.camera" android:required="true" />
@@ -43,6 +43,10 @@
         </activity>
         <activity
             android:name=".settings.SettingsPage"
+            android:exported="true">
+        </activity>
+        <activity
+            android:name=".signin.SignUp"
             android:exported="true">
         </activity>
     </application>
