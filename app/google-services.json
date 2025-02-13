@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "393224790682",
+    "project_id": "eatventory-1b0d7",
+    "storage_bucket": "eatventory-1b0d7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:393224790682:android:09e9dc9a401e8d5e337523",
+        "android_client_info": {
+          "package_name": "com.example.barcodescanner"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCXcyCjTBRgULWa77U2SzAmspXAivsuKtg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
