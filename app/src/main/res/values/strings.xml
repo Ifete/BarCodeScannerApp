@@ -2,6 +2,7 @@
     <string name="app_name">Eatventory</string>
     <string name="username">Username</string>
     <string name="loginBtn">Log In</string>
+    <string name="signUpBtn">Sign Up</string>
     <string name="pasword">Password</string>
     <string name="storage">Storage</string>
     <string name="items">Items</string>

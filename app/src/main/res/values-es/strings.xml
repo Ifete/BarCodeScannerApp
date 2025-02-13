@@ -3,6 +3,7 @@
     <string name="app_name">La Despensa</string>
     <string name="username">Usuario</string>
     <string name="loginBtn">Entrar</string>
+    <string name="signUpBtn">Crear Cuenta</string>
     <string name="pasword">Contraseña</string>
     <string name="storage">Almacén</string>
     <string name="items">Artículos</string>
